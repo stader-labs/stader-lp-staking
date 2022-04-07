@@ -11,7 +11,8 @@ static PREFIX_REWARD: &[u8] = b"reward";
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct Config {
-    pub anchor_token: CanonicalAddr,
+    pub owner: CanonicalAddr,
+    pub stader_token: CanonicalAddr,
     pub staking_token: CanonicalAddr,
     pub distribution_schedule: Vec<(u64, u64, Uint128)>,
 }
