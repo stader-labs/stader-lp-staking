@@ -11,12 +11,9 @@ use anchor_token::staking::{
     StakerInfoResponse, StateResponse,
 };
 
-use crate::{
-    querier::query_anc_minter,
-    state::{
-        read_config, read_staker_info, read_state, remove_staker_info, store_config,
-        store_staker_info, store_state, Config, StakerInfo, State,
-    },
+use crate::state::{
+    read_config, read_staker_info, read_state, remove_staker_info, store_config, store_staker_info,
+    store_state, Config, StakerInfo, State,
 };
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
@@ -35,7 +32,7 @@ pub fn instantiate(
             stader_token: deps.api.addr_canonicalize(&msg.stader_token)?,
             staking_token: deps.api.addr_canonicalize(&msg.staking_token)?,
             distribution_schedule: msg.distribution_schedule,
-            owner: deps.api.addr_canonicalize(msg.owner.as_str())?
+            owner: deps.api.addr_canonicalize(msg.owner.as_str())?,
         },
     )?;
 
@@ -284,7 +281,7 @@ pub fn migrate_staking(
 
     Ok(Response::new()
         .add_messages(vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: anc_token.to_string(),
+            contract_addr: deps.api.addr_humanize(&config.stader_token)?.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: new_staking_contract,
                 amount: remaining_anc,
@@ -367,7 +364,7 @@ pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
         stader_token: deps.api.addr_humanize(&state.stader_token)?.to_string(),
         staking_token: deps.api.addr_humanize(&state.staking_token)?.to_string(),
         distribution_schedule: state.distribution_schedule,
-        owner: deps.api.addr_humanize(&state.owner)?.to_string()
+        owner: deps.api.addr_humanize(&state.owner)?.to_string(),
     };
 
     Ok(resp)
@@ -429,7 +426,7 @@ pub fn assert_new_schedules(
     }
 
     let mut new_counts: BTreeMap<(u64, u64, Uint128), u32> = BTreeMap::new();
-    for schedule in distribution_schedule.clone() {
+    for schedule in distribution_schedule {
         let counter = new_counts.entry(schedule).or_insert(0);
         *counter += 1;
     }

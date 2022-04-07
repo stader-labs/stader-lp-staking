@@ -19,6 +19,7 @@ fn proper_initialization() {
         stader_token: "reward0000".to_string(),
         staking_token: "staking0000".to_string(),
         distribution_schedule: vec![(100, 200, Uint128::from(1000000u128))],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -35,6 +36,7 @@ fn proper_initialization() {
             stader_token: "reward0000".to_string(),
             staking_token: "staking0000".to_string(),
             distribution_schedule: vec![(100, 200, Uint128::from(1000000u128))],
+            owner: "owner0000".to_string()
         }
     );
 
@@ -74,6 +76,7 @@ fn test_bond_tokens() {
                 Uint128::from(10000000u128),
             ),
         ],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -201,6 +204,7 @@ fn test_unbond() {
             (12345, 12345 + 100, Uint128::from(1000000u128)),
             (12345 + 100, 12345 + 200, Uint128::from(10000000u128)),
         ],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -269,6 +273,7 @@ fn test_compute_reward() {
                 Uint128::from(10000000u128),
             ),
         ],
+        owner: "owner000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -390,6 +395,7 @@ fn test_withdraw() {
                 Uint128::from(10000000u128),
             ),
         ],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -447,6 +453,7 @@ fn test_migrate_staking() {
                 Uint128::from(10000000u128),
             ),
         ],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -486,14 +493,12 @@ fn test_migrate_staking() {
     // execute migration after 50 seconds
     env.block.time = env.block.time.plus_seconds(50);
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
     let msg = ExecuteMsg::MigrateStaking {
         new_staking_contract: "newstaking0000".to_string(),
     };
 
     // unauthorized attempt
-    let info = mock_info("notgov0000", &[]);
+    let info = mock_info("notowner0000", &[]);
     let res = execute(deps.as_mut(), env.clone(), info, msg.clone());
     match res {
         Err(StdError::GenericErr { msg, .. }) => assert_eq!(msg, "unauthorized"),
@@ -501,7 +506,7 @@ fn test_migrate_staking() {
     }
 
     // successful attempt
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), env, info, msg).unwrap();
 
     assert_eq!(
@@ -545,7 +550,8 @@ fn test_migrate_staking() {
                     mock_env().block.time.seconds() + 150,
                     Uint128::from(5000000u128)
                 ), // slot was modified
-            ]
+            ],
+            owner: "owner0000".to_string()
         }
     );
 }
@@ -584,6 +590,7 @@ fn test_update_config() {
                 Uint128::from(10000000u128),
             ),
         ],
+        owner: "owner0000".to_string(),
     };
 
     let info = mock_info("addr0000", &[]);
@@ -597,9 +604,7 @@ fn test_update_config() {
         )],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("notgov", &[]);
+    let info = mock_info("notowner", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config);
     match res {
         Err(StdError::GenericErr { msg, .. }) => assert_eq!(msg, "unauthorized"),
@@ -667,9 +672,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config);
     match res {
         Err(StdError::GenericErr { msg, .. }) => {
@@ -728,9 +731,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config);
     match res {
         Err(StdError::GenericErr { msg, .. }) => {
@@ -770,9 +771,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config).unwrap();
 
     assert_eq!(res.attributes, vec![("action", "update_config")]);
@@ -842,9 +841,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config).unwrap();
 
     assert_eq!(res.attributes, vec![("action", "update_config")]);
@@ -913,9 +910,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config).unwrap();
 
     assert_eq!(res.attributes, vec![("action", "update_config")]);
@@ -989,9 +984,7 @@ fn test_update_config() {
         ],
     };
 
-    deps.querier.with_anc_minter("gov0000".to_string());
-
-    let info = mock_info("gov0000", &[]);
+    let info = mock_info("owner0000", &[]);
     let res = execute(deps.as_mut(), mock_env(), info, update_config).unwrap();
 
     assert_eq!(res.attributes, vec![("action", "update_config")]);
