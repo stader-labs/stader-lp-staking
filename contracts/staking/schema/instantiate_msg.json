@@ -3,14 +3,12 @@
   "title": "InstantiateMsg",
   "type": "object",
   "required": [
-    "anchor_token",
     "distribution_schedule",
+    "owner",
+    "stader_token",
     "staking_token"
   ],
   "properties": {
-    "anchor_token": {
-      "type": "string"
-    },
     "distribution_schedule": {
       "type": "array",
       "items": {
@@ -33,6 +31,12 @@
         "maxItems": 3,
         "minItems": 3
       }
+    },
+    "owner": {
+      "type": "string"
+    },
+    "stader_token": {
+      "type": "string"
     },
     "staking_token": {
       "type": "string"
