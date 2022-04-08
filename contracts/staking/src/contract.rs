@@ -11,12 +11,9 @@ use anchor_token::staking::{
     StakerInfoResponse, StateResponse,
 };
 
-use crate::{
-    querier::query_anc_minter,
-    state::{
-        read_config, read_staker_info, read_state, remove_staker_info, store_config,
-        store_staker_info, store_state, Config, StakerInfo, State,
-    },
+use crate::state::{
+    read_config, read_staker_info, read_state, remove_staker_info, store_config, store_staker_info,
+    store_state, Config, StakerInfo, State,
 };
 
 use cw20::{Cw20ExecuteMsg, Cw20ReceiveMsg};
@@ -32,9 +29,10 @@ pub fn instantiate(
     store_config(
         deps.storage,
         &Config {
-            anchor_token: deps.api.addr_canonicalize(&msg.anchor_token)?,
-            staking_token: deps.api.addr_canonicalize(&msg.staking_token)?,
+            stader_token: deps.api.addr_canonicalize(&msg.stader_token.to_lowercase())?,
+            staking_token: deps.api.addr_canonicalize(&msg.staking_token.to_lowercase())?,
             distribution_schedule: msg.distribution_schedule,
+            owner: deps.api.addr_canonicalize(msg.owner.to_lowercase().as_str())?,
         },
     )?;
 
@@ -185,7 +183,7 @@ pub fn withdraw(deps: DepsMut, env: Env, info: MessageInfo) -> StdResult<Respons
 
     Ok(Response::new()
         .add_messages(vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: deps.api.addr_humanize(&config.anchor_token)?.to_string(),
+            contract_addr: deps.api.addr_humanize(&config.stader_token)?.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: info.sender.to_string(),
                 amount,
@@ -210,18 +208,15 @@ pub fn update_config(
     let state: State = read_state(deps.storage)?;
 
     let sender_addr_raw: CanonicalAddr = deps.api.addr_canonicalize(info.sender.as_str())?;
-    let anc_token: Addr = deps.api.addr_humanize(&config.anchor_token)?;
-    let gov_addr_raw: CanonicalAddr = deps
-        .api
-        .addr_canonicalize(&query_anc_minter(&deps.querier, anc_token)?)?;
-    if sender_addr_raw != gov_addr_raw {
+    if sender_addr_raw != config.owner {
         return Err(StdError::generic_err("unauthorized"));
     }
 
     assert_new_schedules(&config, &state, distribution_schedule.clone())?;
 
     let new_config = Config {
-        anchor_token: config.anchor_token,
+        owner: config.owner,
+        stader_token: config.stader_token,
         staking_token: config.staking_token,
         distribution_schedule,
     };
@@ -239,13 +234,8 @@ pub fn migrate_staking(
     let sender_addr_raw: CanonicalAddr = deps.api.addr_canonicalize(info.sender.as_str())?;
     let mut config: Config = read_config(deps.storage)?;
     let mut state: State = read_state(deps.storage)?;
-    let anc_token: Addr = deps.api.addr_humanize(&config.anchor_token)?;
 
-    // get gov address by querying anc token minter
-    let gov_addr_raw: CanonicalAddr = deps
-        .api
-        .addr_canonicalize(&query_anc_minter(&deps.querier, anc_token.clone())?)?;
-    if sender_addr_raw != gov_addr_raw {
+    if sender_addr_raw != config.owner {
         return Err(StdError::generic_err("unauthorized"));
     }
 
@@ -291,7 +281,7 @@ pub fn migrate_staking(
 
     Ok(Response::new()
         .add_messages(vec![CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: anc_token.to_string(),
+            contract_addr: deps.api.addr_humanize(&config.stader_token)?.to_string(),
             msg: to_binary(&Cw20ExecuteMsg::Transfer {
                 recipient: new_staking_contract,
                 amount: remaining_anc,
@@ -371,9 +361,10 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
 pub fn query_config(deps: Deps) -> StdResult<ConfigResponse> {
     let state = read_config(deps.storage)?;
     let resp = ConfigResponse {
-        anchor_token: deps.api.addr_humanize(&state.anchor_token)?.to_string(),
+        stader_token: deps.api.addr_humanize(&state.stader_token)?.to_string(),
         staking_token: deps.api.addr_humanize(&state.staking_token)?.to_string(),
         distribution_schedule: state.distribution_schedule,
+        owner: deps.api.addr_humanize(&state.owner)?.to_string(),
     };
 
     Ok(resp)
@@ -435,7 +426,7 @@ pub fn assert_new_schedules(
     }
 
     let mut new_counts: BTreeMap<(u64, u64, Uint128), u32> = BTreeMap::new();
-    for schedule in distribution_schedule.clone() {
+    for schedule in distribution_schedule {
         let counter = new_counts.entry(schedule).or_insert(0);
         *counter += 1;
     }
