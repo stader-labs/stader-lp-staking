@@ -32,7 +32,7 @@ pub fn instantiate(
             stader_token: deps.api.addr_canonicalize(&msg.stader_token)?,
             staking_token: deps.api.addr_canonicalize(&msg.staking_token)?,
             distribution_schedule: msg.distribution_schedule,
-            owner: deps.api.addr_canonicalize(msg.owner.as_str())?,
+            owner: deps.api.addr_canonicalize(msg.owner.to_lowercase().as_str())?,
         },
     )?;
 
