@@ -1,10 +1,8 @@
-use cosmwasm_bignumber::{Decimal256, Uint256};
 use cosmwasm_std::{
     to_binary, Addr, AllBalanceResponse, BalanceResponse, BankQuery, Coin, Deps, QueryRequest,
-    StdResult, WasmQuery,
+    StdResult, Uint256, WasmQuery,
 };
 use cw20::{BalanceResponse as Cw20BalanceResponse, Cw20QueryMsg, TokenInfoResponse};
-use terra_cosmwasm::TerraQuerier;
 
 pub fn query_all_balances(deps: Deps, account_addr: Addr) -> StdResult<Vec<Coin>> {
     // load price form the oracle
@@ -50,28 +48,4 @@ pub fn query_supply(deps: Deps, contract_addr: Addr) -> StdResult<Uint256> {
         }))?;
 
     Ok(Uint256::from(token_info.total_supply.u128()))
-}
-
-pub fn query_tax_rate(deps: Deps) -> StdResult<Decimal256> {
-    let terra_querier = TerraQuerier::new(&deps.querier);
-    Ok(terra_querier.query_tax_rate()?.rate.into())
-}
-
-pub fn compute_tax(deps: Deps, coin: &Coin) -> StdResult<Uint256> {
-    let terra_querier = TerraQuerier::new(&deps.querier);
-    let tax_rate = Decimal256::from((terra_querier.query_tax_rate()?).rate);
-    let tax_cap = Uint256::from((terra_querier.query_tax_cap(coin.denom.to_string())?).cap);
-    let amount = Uint256::from(coin.amount);
-    Ok(std::cmp::min(
-        amount * (Decimal256::one() - Decimal256::one() / (Decimal256::one() + tax_rate)),
-        tax_cap,
-    ))
-}
-
-pub fn deduct_tax(deps: Deps, coin: Coin) -> StdResult<Coin> {
-    let tax_amount = compute_tax(deps, &coin)?;
-    Ok(Coin {
-        denom: coin.denom,
-        amount: (Uint256::from(coin.amount) - tax_amount).into(),
-    })
 }

@@ -29,10 +29,16 @@ pub fn instantiate(
     store_config(
         deps.storage,
         &Config {
-            stader_token: deps.api.addr_canonicalize(&msg.stader_token.to_lowercase())?,
-            staking_token: deps.api.addr_canonicalize(&msg.staking_token.to_lowercase())?,
+            stader_token: deps
+                .api
+                .addr_canonicalize(&msg.stader_token.to_lowercase())?,
+            staking_token: deps
+                .api
+                .addr_canonicalize(&msg.staking_token.to_lowercase())?,
             distribution_schedule: msg.distribution_schedule,
-            owner: deps.api.addr_canonicalize(msg.owner.to_lowercase().as_str())?,
+            owner: deps
+                .api
+                .addr_canonicalize(msg.owner.to_lowercase().as_str())?,
         },
     )?;
 
@@ -333,8 +339,7 @@ fn compute_reward(config: &Config, state: &mut State, block_time: u64) {
     }
 
     state.last_distributed = block_time;
-    state.global_reward_index = state.global_reward_index
-        + Decimal::from_ratio(distributed_amount, state.total_bond_amount);
+    state.global_reward_index += Decimal::from_ratio(distributed_amount, state.total_bond_amount);
 }
 
 // withdraw reward to pending reward
